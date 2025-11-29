@@ -85,6 +85,9 @@ class Agent:
             tool_choice="auto"
         )
 
+        if response.usage:
+            logger.info(f"Token Usage (First Call): Prompt: {response.usage.prompt_tokens}, Completion: {response.usage.completion_tokens}, Total: {response.usage.total_tokens}")
+
         response_message = response.choices[0].message
         tool_calls = response_message.tool_calls
 
@@ -119,6 +122,9 @@ class Agent:
                 model=self.model,
                 messages=messages
             )
+            
+            if second_response.usage:
+                logger.info(f"Token Usage (Second Call): Prompt: {second_response.usage.prompt_tokens}, Completion: {second_response.usage.completion_tokens}, Total: {second_response.usage.total_tokens}")
             final_content = second_response.choices[0].message.content
             
             return AgentResult(
