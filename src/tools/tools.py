@@ -4,9 +4,9 @@ from src.schemas.models import Order
 
 # Mock Database
 MOCK_ORDERS = {
-    "123": {"order_id": "123", "status": "Shipped", "items": ["Laptop", "Mouse"], "delivery_date": "2023-10-25"},
-    "456": {"order_id": "456", "status": "Processing", "items": ["Monitor"], "delivery_date": "2023-10-28"},
-    "789": {"order_id": "789", "status": "Delivered", "items": ["Keyboard"], "delivery_date": "2023-10-20"},
+    "123": {"order_id": "123", "status": "Shipped", "items": ["Laptop", "Mouse"], "delivery_date": "2025-12-12"},
+    "456": {"order_id": "456", "status": "Processing", "items": ["Monitor"], "delivery_date": "2025-12-20"},
+    "789": {"order_id": "789", "status": "Delivered", "items": ["Keyboard"], "delivery_date": "2025-11-25"},
 }
 
 def get_order_status(order_id: str) -> str:
