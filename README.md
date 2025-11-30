@@ -1,6 +1,7 @@
+
 # Customer Support Agent
 
-An autonomous customer support agent built with Python, OpenAI, and Chainlit. The agent uses a "Swarm-like" pattern to handle customer queries, check order statuses, and escalate issues when necessary.
+An autonomous customer support agent built with Python, OpenAI, and Chainlit. The agent leverages OpenAI's function calling capabilities to intelligently handle customer queries, check order statuses, and escalate issues when necessary, all within a modular Client-Server architecture.
 
 ## Features
 
@@ -9,23 +10,31 @@ An autonomous customer support agent built with Python, OpenAI, and Chainlit. Th
 - **Guardrails**: Prevents the agent from answering off-topic questions (e.g., coding, math).
 - **Observability**: Logs token usage and latency for every agent execution.
 - **Modern UI**: Built with Chainlit for a chat-like experience.
-- **Modular Architecture**: Clean separation of concerns with a `src/` layout.
+- **Modular Architecture**: Clean separation of concerns with a `src/` layout and Client-Server split.
 
 ## Architecture
 
-The data flow is simple: User -> Chainlit UI -> Agent -> LLM (OpenAI) -> Tools -> Agent -> UI.
+The application follows a Client-Server architecture where the Chainlit frontend communicates with a FastAPI backend. The backend orchestrates the AI agent, which interacts with OpenAI and executes tools.
 
 ```mermaid
 graph TD
-    User[User] -->|Message| UI[Chainlit UI]
-    UI -->|Messages| Agent[Agent Orchestrator]
-    Agent -->|Prompt + History| LLM[OpenAI GPT-4o]
-    LLM -->|Tool Call?| Agent
-    Agent -->|Yes| Tools[Tool Execution]
-    Tools -->|Result| Agent
-    Agent -->|Result + History| LLM
-    LLM -->|Final Response| Agent
-    Agent -->|Response| UI
+    subgraph Client
+        User[User] -->|Interacts| UI[Chainlit Frontend]
+    end
+
+    subgraph Server
+        UI -->|HTTP POST /chat| API[FastAPI Backend]
+        API -->|Messages| Agent[Agent Orchestrator]
+        Agent -->|Prompt| LLM[OpenAI GPT-4o]
+        LLM -->|Tool Call?| Agent
+        Agent -->|Yes| Tools[Tool Execution]
+        Tools -->|Result| Agent
+        Agent -->|Result + History| LLM
+        LLM -->|Final Response| Agent
+        Agent -->|Response| API
+    end
+
+    API -->|JSON| UI
     UI -->|Display| User
 ```
 
@@ -33,20 +42,11 @@ graph TD
 
 ```
 cloudstok-assignment/
-├── app.py                 # Chainlit entry point
+├── main.py                # FastAPI Backend entry point
+├── app.py                 # Chainlit Frontend entry point
 ├── verify_agent.py        # CLI verification script
-├── requirements.txt       # Dependencies
-├── .env                   # Environment variables
-└── src/
-    ├── agents/
-    │   ├── agent.py       # Core Agent logic
-    │   └── prompts.py     # System prompts & guardrails
-    ├── tools/
-    │   └── tools.py       # Mock tools (get_order_status, etc.)
-    ├── schemas/
-    │   └── models.py      # Pydantic models
-    └── helpers/
-        └── utils.py       # Logging & decorators
+├── docker-compose.yml     # Multi-container setup
+├── ...
 ```
 
 ## Setup
@@ -56,20 +56,55 @@ cloudstok-assignment/
     ```bash
     pip install uv
     uv venv
-    # On Windows
-    .venv\Scripts\activate
-    # On macOS/Linux
-    source .venv/bin/activate
-    
-    uv pip install -r requirements.txt
+    # Activate venv...
+    uv sync
     ```
-4.  **Configure Environment**:
+3.  **Configure Environment**:
     - Copy `.env.example` to `.env`
     - Add your `OPENAI_API_KEY`
 
 ## Usage
 
-### Run the UI
+### Run with Docker Compose (Recommended)
+This will start both the Backend (port 8000) and Frontend (port 8001).
+
 ```bash
-uv run chainlit run app.py
+docker-compose up --build
 ```
+
+Access the UI at: `http://localhost:8001`
+
+### Run Locally (Manual)
+You need two terminals:
+
+1.  **Start Backend**:
+    ```bash
+    uv run uvicorn main:app --reload
+    ```
+2.  **Start Frontend**:
+    ```bash
+    uv run chainlit run app.py -w
+    ```
+
+### API Usage
+
+You can interact with the backend API directly using `curl` or any HTTP client.
+
+**Endpoint**: `POST http://localhost:8000/chat`
+
+**Request Body**:
+```json
+{
+  "messages": [
+    {"role": "user", "content": "Where is my order 123?"}
+  ]
+}
+```
+
+**Example (curl)**:
+```bash
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"messages": [{"role": "user", "content": "Hello"}]}'
+```
+
