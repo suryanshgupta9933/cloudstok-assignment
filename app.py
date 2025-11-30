@@ -1,6 +1,10 @@
 import chainlit as cl
-from src.agents.agent import run_agent
+import httpx
+import os
 from src.helpers.utils import logger
+
+# Backend API URL (default to localhost for local dev, override in docker)
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 @cl.on_chat_start
 async def start():
@@ -9,7 +13,6 @@ async def start():
 @cl.on_message
 async def main(message: cl.Message):
     # Create the message history for the agent
-    # In a real app, we'd maintain history in the session
     messages = cl.user_session.get("messages", [])
     messages.append({"role": "user", "content": message.content})
     
@@ -17,20 +20,26 @@ async def main(message: cl.Message):
     await response_msg.send()
     
     try:
-        # We'll run the agent in a separate thread to avoid blocking the async loop
-        result = await cl.make_async(run_agent)(messages)
-        
+        # Call the Backend API
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                f"{BACKEND_URL}/chat",
+                json={"messages": messages}
+            )
+            response.raise_for_status()
+            result = response.json()
+            
         # Stream the response (simulated since we get full response)
-        response_msg.content = result.response
+        response_msg.content = result["response"]
         await response_msg.update()
         
         # Append assistant response to history
-        messages.append({"role": "assistant", "content": result.response})
+        messages.append({"role": "assistant", "content": result["response"]})
         cl.user_session.set("messages", messages)
         
         # Display tool calls if any
-        if result.tool_calls:
-            for tool in result.tool_calls:
+        if result.get("tool_calls"):
+            for tool in result["tool_calls"]:
                 async with cl.Step(name=tool["name"]) as step:
                     step.input = str(tool["args"])
                     step.output = str(tool["result"])
