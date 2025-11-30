@@ -10,7 +10,6 @@ An autonomous customer support agent built with Python, OpenAI, and Chainlit. Th
 - **Guardrails**: Prevents the agent from answering off-topic questions (e.g., coding, math).
 - **Observability**: Logs token usage and latency for every agent execution.
 - **Modern UI**: Built with Chainlit for a chat-like experience.
-- **Modular Architecture**: Clean separation of concerns with a `src/` layout and Client-Server split.
 
 ## Architecture
 
@@ -25,7 +24,7 @@ graph TD
     subgraph Server
         UI -->|HTTP POST /chat| API[FastAPI Backend]
         API -->|Messages| Agent[Agent Orchestrator]
-        Agent -->|Prompt| LLM[OpenAI GPT-4o]
+        Agent -->|Prompt| LLM[OpenAI gpt-4.1-mini]
         LLM -->|Tool Call?| Agent
         Agent -->|Yes| Tools[Tool Execution]
         Tools -->|Result| Agent
@@ -42,23 +41,49 @@ graph TD
 
 ```
 cloudstok-assignment/
+├── src/
+│   ├── agents/
+│   │   ├── agent.py       # Core Agent logic (OpenAI interaction loop)
+│   │   └── prompts.py     # System prompts and guardrail definitions
+│   ├── tools/
+│   │   └── tools.py       # Mock tools (get_order_status, escalate_to_human)
+│   ├── schemas/
+│   │   └── models.py      # Pydantic models for data validation
+│   └── helpers/
+│       └── utils.py       # Utility functions (logging, decorators)
 ├── main.py                # FastAPI Backend entry point
 ├── app.py                 # Chainlit Frontend entry point
-├── verify_agent.py        # CLI verification script
-├── docker-compose.yml     # Multi-container setup
-├── ...
+├── docker-compose.yml     # Multi-container orchestration
+├── Dockerfile             # Docker image definition
+├── pyproject.toml         # Project dependencies and configuration
+├── uv.lock                # Dependency lock file
+├── .env                   # Environment variables (API keys)
+└── README.md              # Project documentation
 ```
 
 ## Setup
 
 1.  **Clone the repository**
+```bash
+git clone https://github.com/suryanshgupta9933/cloudstok-assignment.git
+cd cloudstok-assignment
+```
 2.  **Create a virtual environment and install dependencies using uv**:
-    ```bash
-    pip install uv
-    uv venv
-    # Activate venv...
-    uv sync
-    ```
+```bash
+pip install uv
+
+# Create virtual environment
+uv venv
+
+# Activate virtual environment
+# On Windows
+.venv\Scripts\activate
+# On Linux/Mac
+source .venv/bin/activate
+
+# Install dependencies
+uv sync
+```
 3.  **Configure Environment**:
     - Copy `.env.example` to `.env`
     - Add your `OPENAI_API_KEY`
@@ -79,11 +104,11 @@ You need two terminals:
 
 1.  **Start Backend**:
     ```bash
-    uv run uvicorn main:app --reload
+    uv run uvicorn main:app
     ```
 2.  **Start Frontend**:
     ```bash
-    uv run chainlit run app.py -w
+    uv run chainlit run app.py
     ```
 
 ### API Usage
@@ -108,3 +133,4 @@ curl -X POST http://localhost:8000/chat \
   -d '{"messages": [{"role": "user", "content": "Hello"}]}'
 ```
 
+## Demo Video
