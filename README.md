@@ -134,3 +134,5 @@ curl -X POST http://localhost:8000/chat \
 ```
 
 ## Demo Video
+https://github.com/user-attachments/assets/c779b594-174f-4d22-8375-c66db74dbbbe
+
